@@ -1,5 +1,7 @@
-﻿using System.Data.Entity;
+﻿using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
+using System.Runtime.Remoting.Proxies;
 using System.Web.Mvc;
 using Vidly.Models;
 using Vidly.ViewModels;
@@ -20,6 +22,7 @@ namespace Vidly.Controllers
             _context.Dispose();
         }
 
+        [Authorize(Roles = RoleName.CanManageMovie)]
         public ActionResult New()
         {
             var membershipTypes = _context.MembershipTypes.ToList();
@@ -34,6 +37,7 @@ namespace Vidly.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = RoleName.CanManageMovie)]
         public ActionResult Save(Customer customer)
         {
             if (!ModelState.IsValid)
@@ -63,13 +67,17 @@ namespace Vidly.Controllers
             return RedirectToAction("Index", "Customers");
         }
 
+
         public ViewResult Index()
         {
             var customers = _context.Customers.Include(c => c.MembershipType).ToList();
 
-            return View(customers);
+            if (User.IsInRole(RoleName.CanManageMovie))
+                return View("List",customers);
+            return View("ReadOnlyList", customers);
         }
 
+        [Authorize(Roles = RoleName.CanManageMovie)]
         public ActionResult Details(int id)
         {
             var customer = _context.Customers.Include(c => c.MembershipType).SingleOrDefault(c => c.Id == id);
@@ -80,6 +88,7 @@ namespace Vidly.Controllers
             return View(customer);
         }
 
+        [Authorize(Roles = RoleName.CanManageMovie)]
         public ActionResult Edit(int id)
         {
             var customer = _context.Customers.SingleOrDefault(c => c.Id == id);
